@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Person {
+  id             String        @id @default(cuid())
+  name           String
+  age            Int?
+  nationality    String?
+  heightCm       Int?
+  attractiveness Float?
+  platform       String
+  drinks         Boolean?
+  profession     String?
+  status         PersonStatus  @default(ACTIVE)
+  dealBreakers   String[]
+  greenFlags     String[]
+  dateNotes      String?
+  followUpDate   DateTime?
+  followUpNote   String?
+  lastContactDate DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  interactions   Interaction[]
+  audioNotes     AudioNote[]
+}
+
+enum PersonStatus {
+  ACTIVE
+  NEEDS_PING
+  DATE_PLANNED
+  GHOSTED
+  ARCHIVED
+}
+
+model Interaction {
+  id               String   @id @default(cuid())
+  personId         String
+  person           Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  date             DateTime @default(now())
+  platform         String
+  summary          String?
+  aiInterestScore  Float?
+  aiInterestReason String?
+  rawChatText      String?
+  screenshotUrls   String[]
+  createdAt        DateTime @default(now())
+}
+
+model AudioNote {
+  id                 String   @id @default(cuid())
+  personId           String?
+  person             Person?  @relation(fields: [personId], references: [id], onDelete: SetNull)
+  audioUrl           String
+  transcript         String?
+  aiExtractedUpdates Json?
+  applied            Boolean  @default(false)
+  createdAt          DateTime @default(now())
+}

@@ -1,0 +1,146 @@
+import { PrismaClient, PersonStatus } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+const seedPeople = [
+  {
+    name: 'Bianca',
+    age: 29,
+    nationality: 'Italian',
+    heightCm: 165,
+    attractiveness: 6,
+    platform: 'Bumble',
+    drinks: true,
+    status: PersonStatus.ACTIVE,
+    greenFlags: ['Italian', 'traveler'],
+    dealBreakers: [] as string[],
+    dateNotes: 'Traveler connection — she was excited about Syria trip. Said she\'s fairly free this week.',
+    lastContactDate: new Date('2026-05-12'),
+    followUpDate: new Date('2026-05-14'),
+    followUpNote: 'CRITICAL: she leaves tomorrow for a month. Tonight or never.',
+  },
+  {
+    name: 'Giulia',
+    age: 30,
+    nationality: 'Italian',
+    heightCm: 165,
+    attractiveness: 6.5,
+    platform: 'Hinge',
+    drinks: true,
+    status: PersonStatus.NEEDS_PING,
+    dealBreakers: ['limited_english'],
+    greenFlags: ['Italian'],
+    dateNotes: 'English is weak — a real ceiling. Mentioned maybe going to Milan this weekend.',
+    lastContactDate: new Date('2026-05-13'),
+    followUpDate: new Date('2026-05-14'),
+    followUpNote: 'Ask if she decided to go to Milan or not.',
+  },
+  {
+    name: 'KC',
+    age: 32,
+    nationality: 'Indian',
+    heightCm: 162,
+    attractiveness: 5,
+    platform: 'Bumble',
+    drinks: true,
+    status: PersonStatus.ACTIVE,
+    dealBreakers: [] as string[],
+    greenFlags: ['spontaneous'],
+    dateNotes: 'She said yes to a wine bar crawl this weekend. Ping today or tomorrow if you want it to happen.',
+    lastContactDate: new Date('2026-05-13'),
+    followUpDate: new Date('2026-05-15'),
+    followUpNote: 'Confirm weekend wine bar plans if you want to go.',
+  },
+  {
+    name: 'Alessandra',
+    age: 21,
+    nationality: 'Italian',
+    heightCm: 175,
+    attractiveness: 4.5,
+    platform: 'Hinge',
+    drinks: true,
+    status: PersonStatus.ACTIVE,
+    dealBreakers: ['too_young', 'too_tall'],
+    greenFlags: ['Italian', 'cinema_interest', 'she_initiated'],
+    dateNotes: 'Cinema/theater student. She messaged me first yesterday. Conversation dropped mid-thread last night.',
+    lastContactDate: new Date('2026-05-13'),
+    followUpDate: new Date('2026-05-14'),
+    followUpNote: 'Pick up conversation — ask about her film taste or what she\'s studying.',
+  },
+  {
+    name: 'Leila',
+    age: 23,
+    nationality: 'Azerbaijani',
+    heightCm: 160,
+    attractiveness: 6.5,
+    platform: 'Bumble',
+    drinks: true,
+    status: PersonStatus.NEEDS_PING,
+    dealBreakers: [] as string[],
+    greenFlags: ['good_height', 'intellectual', 'interesting_thesis'],
+    dateNotes: 'Master\'s thesis on French colonialism and Islamic intersections. Chatty but went quiet for 24h after a long reply I sent.',
+    lastContactDate: new Date('2026-05-13'),
+    followUpDate: new Date('2026-05-16'),
+    followUpNote: 'Light reactivation ping — reference something from conversation.',
+  },
+  {
+    name: 'Janina',
+    age: 30,
+    nationality: 'German',
+    heightCm: 163,
+    attractiveness: 6,
+    platform: 'Hinge',
+    drinks: true,
+    status: PersonStatus.ACTIVE,
+    dealBreakers: [] as string[],
+    greenFlags: ['athletic', 'spontaneous_preferred'],
+    dateNotes: 'Ultra runner — her idea of a date is a 21km run then food. Busy with exams, said to be spontaneous.',
+    lastContactDate: new Date('2026-05-12'),
+    followUpDate: new Date('2026-05-17'),
+    followUpNote: 'Weekend ping — ask how studying is going, keep it warm.',
+  },
+  {
+    name: 'Neg',
+    age: 34,
+    nationality: 'Iranian',
+    heightCm: 158,
+    attractiveness: undefined,
+    platform: 'Instagram',
+    drinks: undefined,
+    status: PersonStatus.ACTIVE,
+    dealBreakers: ['age'],
+    greenFlags: [] as string[],
+    dateNotes: 'Pharmacist. Nice but not super chatty. Birthday is Saturday May 17 and she\'s working — doesn\'t seem to have big plans.',
+    lastContactDate: new Date('2026-05-13'),
+    followUpDate: new Date('2026-05-17'),
+    followUpNote: 'Send birthday message Saturday. Keep it warm.',
+  },
+  {
+    name: 'Ellaria',
+    age: 24,
+    nationality: 'Italian',
+    heightCm: 177,
+    attractiveness: 6,
+    platform: 'Bumble',
+    drinks: false,
+    status: PersonStatus.ARCHIVED,
+    dealBreakers: ['too_tall', 'no_drinking', 'shallow_instagram', 'flaky'],
+    greenFlags: [] as string[],
+    dateNotes: 'Insisted on phone call, then never called back after agreeing on a time. Ended with an emoji. Dead end.',
+    lastContactDate: new Date('2026-05-13'),
+  },
+];
+
+async function main() {
+  console.log('Seeding database...');
+
+  for (const person of seedPeople) {
+    await prisma.person.create({ data: person });
+  }
+
+  console.log(`Seeded ${seedPeople.length} people.`);
+}
+
+main()
+  .catch(console.error)
+  .finally(() => prisma.$disconnect());

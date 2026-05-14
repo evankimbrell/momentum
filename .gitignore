@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+server/uploads/
+server/prisma/migrations/
+
+# Keep the migration folder but ignore its contents after first deploy
+!server/prisma/migrations/
