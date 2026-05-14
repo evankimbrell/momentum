@@ -42,7 +42,7 @@ export default function Dashboard() {
       </div>
 
       {/* Card list */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2 pb-28">
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2" style={{ paddingBottom: 'calc(112px + env(safe-area-inset-bottom))' }}>
         {loading ? (
           <div className="text-center py-12 text-zinc-600 text-sm">Loading...</div>
         ) : people.length === 0 ? (
@@ -60,7 +60,8 @@ export default function Dashboard() {
 
       {/* FAB */}
       <button
-        className="fixed bottom-20 right-4 w-14 h-14 bg-white text-black rounded-full shadow-xl flex items-center justify-center z-20"
+        className="fixed right-4 w-14 h-14 bg-white text-black rounded-full shadow-xl flex items-center justify-center z-20"
+        style={{ bottom: 'calc(72px + env(safe-area-inset-bottom))' }}
         onClick={() => setShowSheet(true)}
       >
         <Plus size={24} />

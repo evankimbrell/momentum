@@ -102,7 +102,7 @@ export default function PersonProfile() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto pb-32">
+      <div className="flex-1 overflow-y-auto" style={{ paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' }}>
         {/* Stats row */}
         <div className="px-4 pt-4 grid grid-cols-4 gap-2">
           {[
@@ -252,7 +252,9 @@ export default function PersonProfile() {
       </div>
 
       {/* Action bar */}
-      <div className="fixed bottom-16 left-0 right-0 bg-[#0a0a0a] border-t border-white/8 px-4 py-3 flex gap-2 z-10">
+      <div className="fixed left-0 right-0 bg-[#0a0a0a] border-t border-white/8 px-4 py-3 flex gap-2 z-10"
+        style={{ bottom: 'calc(56px + env(safe-area-inset-bottom))' }}
+      >
         <ActionBtn icon={<Mic size={16} />} label="Voice" onClick={() => setSheet('voice')} />
         <ActionBtn icon={<Image size={16} />} label="Screenshot" onClick={() => setSheet('screenshot')} />
         <ActionBtn icon={<Plus size={16} />} label="Log" onClick={() => setSheet('manual')} />

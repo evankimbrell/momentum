@@ -10,7 +10,9 @@ function BottomNav() {
   if (isProfile) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-[#0d0d0d] border-t border-white/8 flex z-30">
+    <nav className="fixed bottom-0 left-0 right-0 bg-[#0d0d0d] border-t border-white/8 flex z-30"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
       {[
         { to: '/', icon: <LayoutGrid size={20} />, label: 'Dashboard' },
         { to: '/followups', icon: <Calendar size={20} />, label: 'Follow-ups' },
@@ -37,7 +39,14 @@ function BottomNav() {
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="flex flex-col h-svh bg-[#0a0a0a] overflow-hidden">
+      <div className="flex flex-col bg-[#0a0a0a] overflow-hidden"
+        style={{
+          height: '100dvh',
+          paddingTop: 'env(safe-area-inset-top)',
+          paddingLeft: 'env(safe-area-inset-left)',
+          paddingRight: 'env(safe-area-inset-right)',
+        }}
+      >
         <div className="flex-1 overflow-hidden">
           <Routes>
             <Route path="/" element={<Dashboard />} />
