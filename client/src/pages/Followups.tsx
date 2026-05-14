@@ -27,7 +27,9 @@ export default function Followups() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="sticky top-0 z-10 bg-[#0a0a0a] border-b border-white/8 px-4 py-3">
+      <div className="sticky top-0 z-10 bg-[#0a0a0a] border-b border-white/8 px-4 py-3"
+        style={{ paddingTop: 'calc(12px + env(safe-area-inset-top))' }}
+      >
         <h1 className="text-base font-semibold text-white">Follow-ups</h1>
         <p className="text-[11px] text-zinc-500">Due today or overdue</p>
       </div>

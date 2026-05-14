@@ -29,7 +29,9 @@ export default function Dashboard() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-[#0a0a0a] border-b border-white/8 px-4 py-3 flex items-center justify-between">
+      <div className="sticky top-0 z-10 bg-[#0a0a0a] border-b border-white/8 px-4 py-3 flex items-center justify-between"
+        style={{ paddingTop: 'calc(12px + env(safe-area-inset-top))' }}
+      >
         <div>
           <h1 className="text-base font-semibold text-white">Momentum</h1>
           {criticalCount > 0 && (

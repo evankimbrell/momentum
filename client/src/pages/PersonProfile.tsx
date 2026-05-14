@@ -78,7 +78,9 @@ export default function PersonProfile() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-[#0a0a0a] border-b border-white/8 px-4 py-3 flex items-center gap-3">
+      <div className="sticky top-0 z-10 bg-[#0a0a0a] border-b border-white/8 px-4 py-3 flex items-center gap-3"
+        style={{ paddingTop: 'calc(12px + env(safe-area-inset-top))' }}
+      >
         <button onClick={() => navigate(-1)} className="text-zinc-400 p-1 -ml-1">
           <ArrowLeft size={20} />
         </button>
