@@ -27,3 +27,8 @@ body {
 .font-mono {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
 }
+
+@keyframes waveBar {
+  from { transform: scaleY(0.3); }
+  to   { transform: scaleY(1); }
+}
