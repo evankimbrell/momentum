@@ -4,7 +4,7 @@ import { sendVoiceMemo, applyVoiceMemo, getPeople } from '../lib/api';
 import type { Person, VoiceMemoResult } from '../lib/types';
 
 interface Props {
-  onSaved: () => void;
+  onSaved: (personId: string) => void;
   onClose: () => void;
   defaultPersonId?: string;
 }
@@ -128,12 +128,12 @@ export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) 
     if (!result) return;
     setSaving(true);
     try {
-      await applyVoiceMemo({
+      const person = await applyVoiceMemo({
         extracted: result.extracted,
         personId: selectedPersonId || undefined,
         transcript: result.transcript,
       });
-      onSaved();
+      onSaved(person.id);
     } catch {
       setError('Failed to save');
     } finally {

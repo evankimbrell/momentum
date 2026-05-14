@@ -24,6 +24,7 @@ model Person {
   followUpDate   DateTime?
   followUpNote   String?
   lastContactDate DateTime?
+  photoUrls      String[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   interactions   Interaction[]

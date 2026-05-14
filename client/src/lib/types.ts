@@ -31,6 +31,7 @@ export interface Person {
   followUpDate?: string;
   followUpNote?: string;
   lastContactDate?: string;
+  photoUrls: string[];
   createdAt: string;
   updatedAt: string;
   interactions: Interaction[];

@@ -32,6 +32,12 @@ export const updatePerson = (id: string, data: Partial<Person>) =>
 export const deletePerson = (id: string) =>
   fetch(`${BASE}/people/${id}`, { method: 'DELETE' });
 
+export const uploadPersonPhotos = (personId: string, files: File[]) => {
+  const form = new FormData();
+  files.forEach((f) => form.append('photos', f));
+  return request<Person>(`/people/${personId}/photos`, { method: 'POST', body: form });
+};
+
 // Interactions
 export const getInteractions = (personId: string) =>
   request<Interaction[]>(`/people/${personId}/interactions`);

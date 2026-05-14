@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mic, Image, MessageSquare, Plus, Trash2 } from 'lucide-react';
-import { getPerson, suggestFollowup, createInteraction, updatePerson, deletePerson } from '../lib/api';
+import { ArrowLeft, Mic, Image, MessageSquare, Plus, Trash2, ImagePlus } from 'lucide-react';
+import { getPerson, suggestFollowup, createInteraction, updatePerson, deletePerson, uploadPersonPhotos } from '../lib/api';
 import type { Person } from '../lib/types';
 import { BADGE_CONFIG, flagEmoji, platformBadgeClass, STATUS_LABELS, formatDaysAgo } from '../lib/utils';
 import FollowUpBlock from '../components/FollowUpBlock';
@@ -21,6 +21,7 @@ export default function PersonProfile() {
   const [manualNote, setManualNote] = useState('');
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesText, setNotesText] = useState('');
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -62,6 +63,15 @@ export default function PersonProfile() {
     if (!window.confirm(`Delete ${person.name}? This cannot be undone.`)) return;
     await deletePerson(person.id);
     navigate(-1);
+  };
+
+  const handleAddPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!person) return;
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+    await uploadPersonPhotos(person.id, files.slice(0, 5 - person.photoUrls.length));
+    load();
+    e.target.value = '';
   };
 
   if (!person) {
@@ -119,6 +129,22 @@ export default function PersonProfile() {
             </div>
           ))}
         </div>
+
+        {/* Photo strip */}
+        {person.photoUrls.length > 0 && (
+          <div className="mt-3 px-4">
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              {person.photoUrls.map((url, i) => (
+                <img
+                  key={i}
+                  src={url}
+                  alt=""
+                  className="h-28 w-20 rounded-lg object-cover shrink-0"
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Status */}
         <div className="px-4 mt-3">
@@ -253,12 +279,23 @@ export default function PersonProfile() {
         </div>
       </div>
 
+      {/* Hidden photo file input */}
+      <input
+        ref={photoInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={handleAddPhotos}
+      />
+
       {/* Action bar */}
       <div className="fixed left-0 right-0 bg-[#0a0a0a] border-t border-white/8 px-4 py-3 flex gap-2 z-10"
         style={{ bottom: 'calc(56px + env(safe-area-inset-bottom))' }}
       >
         <ActionBtn icon={<Mic size={16} />} label="Voice" onClick={() => setSheet('voice')} />
         <ActionBtn icon={<Image size={16} />} label="Screenshot" onClick={() => setSheet('screenshot')} />
+        <ActionBtn icon={<ImagePlus size={16} />} label="Photos" onClick={() => photoInputRef.current?.click()} />
         <ActionBtn icon={<Plus size={16} />} label="Log" onClick={() => setSheet('manual')} />
         <ActionBtn icon={<MessageSquare size={16} />} label="Suggest" onClick={handleSuggest} />
       </div>
@@ -273,7 +310,7 @@ export default function PersonProfile() {
                 <h2 className="text-base font-semibold text-white mb-4">Voice memo</h2>
                 <VoiceMemo
                   defaultPersonId={person.id}
-                  onSaved={() => { setSheet(null); load(); }}
+                  onSaved={(_personId) => { setSheet(null); load(); }}
                   onClose={() => setSheet(null)}
                 />
               </>
