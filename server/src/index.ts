@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 dotenv.config({ path: path.resolve(__dirname, '../.env'), override: true });
 
 import express from 'express';
@@ -25,14 +26,16 @@ app.use('/api/ai', aiRouter);
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
-// Serve static frontend in production
-if (process.env.NODE_ENV === 'production') {
-  const staticPath = path.join(__dirname, '../../client/dist');
-  console.log('Static files path:', staticPath);
+// Serve static frontend if client/dist exists (production build)
+const staticPath = path.join(__dirname, '../../client/dist');
+if (fs.existsSync(staticPath)) {
+  console.log('Serving static files from:', staticPath);
   app.use(express.static(staticPath));
   app.get('*', (_req, res) => {
     res.sendFile(path.join(staticPath, 'index.html'));
   });
+} else {
+  console.log('No client/dist found — API-only mode');
 }
 
 // Global error handler so async throws return 500 instead of hanging
