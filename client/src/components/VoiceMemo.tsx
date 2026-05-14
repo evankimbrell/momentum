@@ -65,7 +65,7 @@ export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) 
       setLiveTranscript(fullTranscriptRef.current + interim);
     };
 
-    recognition.onerror = (e) => {
+    recognition.onerror = (e: SpeechRecognitionErrorEvent) => {
       if (e.error !== 'no-speech') setError(`Mic error: ${e.error}`);
     };
 
