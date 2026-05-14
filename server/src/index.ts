@@ -23,15 +23,28 @@ app.use('/api/people/:personId/interactions', interactionsRouter);
 app.use('/api/followups', followupsRouter);
 app.use('/api/ai', aiRouter);
 
+app.get('/health', (_req, res) => res.json({ ok: true }));
+
 // Serve static frontend in production
 if (process.env.NODE_ENV === 'production') {
   const staticPath = path.join(__dirname, '../../client/dist');
+  console.log('Static files path:', staticPath);
   app.use(express.static(staticPath));
   app.get('*', (_req, res) => {
     res.sendFile(path.join(staticPath, 'index.html'));
   });
 }
 
+// Global error handler so async throws return 500 instead of hanging
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ error: err.message ?? 'Internal server error' });
+});
+
 app.listen(PORT, () => {
   console.log(`Momentum server running on http://localhost:${PORT}`);
+  console.log('NODE_ENV:', process.env.NODE_ENV);
+  console.log('DATABASE_URL set:', !!process.env.DATABASE_URL);
+  console.log('ANTHROPIC_API_KEY set:', !!process.env.ANTHROPIC_API_KEY);
 });

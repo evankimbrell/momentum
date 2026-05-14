@@ -12,9 +12,14 @@ export default function Dashboard() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const data = await getPeople();
-    setPeople(data);
-    setLoading(false);
+    try {
+      const data = await getPeople();
+      setPeople(data);
+    } catch {
+      // leave people empty, show empty state
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
