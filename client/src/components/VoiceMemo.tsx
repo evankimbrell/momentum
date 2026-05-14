@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { Mic, Square, Check, X } from 'lucide-react';
 import { sendVoiceMemo, applyVoiceMemo, getPeople } from '../lib/api';
 import type { Person, VoiceMemoResult } from '../lib/types';
@@ -18,23 +18,70 @@ export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) 
   const [result, setResult] = useState<VoiceMemoResult | null>(null);
   const [people, setPeople] = useState<Person[]>([]);
   const [selectedPersonId, setSelectedPersonId] = useState(defaultPersonId ?? '');
-  const [liveTranscript, setLiveTranscript] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
   const recognitionRef = useRef<AnyRecognition>(null);
   const fullTranscriptRef = useRef('');
-  // Track whether the user explicitly stopped (vs recognition ending on its own)
   const stoppedByUserRef = useRef(false);
+
+  // Waveform refs
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animFrameRef = useRef<number>(0);
+  const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
     getPeople(true).then(setPeople).catch(() => {});
+    return () => { stopWaveform(); };
   }, []);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const SpeechRecognitionAPI = typeof window !== 'undefined'
     ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     : null;
+
+  const stopWaveform = () => {
+    cancelAnimationFrame(animFrameRef.current);
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    audioCtxRef.current?.close().catch(() => {});
+    streamRef.current = null;
+    audioCtxRef.current = null;
+    analyserRef.current = null;
+
+    // Clear canvas
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx?.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  };
+
+  const drawWaveform = useCallback(() => {
+    const canvas = canvasRef.current;
+    const analyser = analyserRef.current;
+    if (!canvas || !analyser) return;
+
+    const ctx = canvas.getContext('2d')!;
+    const data = new Uint8Array(analyser.frequencyBinCount);
+
+    const draw = () => {
+      animFrameRef.current = requestAnimationFrame(draw);
+      analyser.getByteFrequencyData(data);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const barW = canvas.width / data.length;
+      data.forEach((v, i) => {
+        const h = Math.max(2, (v / 255) * canvas.height);
+        const alpha = 0.25 + (v / 255) * 0.75;
+        ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+        ctx.beginPath();
+        ctx.roundRect(i * barW + 1, canvas.height - h, barW - 2, h, 2);
+        ctx.fill();
+      });
+    };
+    draw();
+  }, []);
 
   const processTranscript = async (transcript: string) => {
     if (!transcript.trim()) {
@@ -55,9 +102,9 @@ export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) 
     }
   };
 
-  const startRecording = () => {
+  const startRecording = async () => {
     if (!SpeechRecognitionAPI) {
-      setError('Speech recognition not supported in this browser. Try Safari on iOS or Chrome.');
+      setError('Speech recognition not supported. Try Safari on iOS or Chrome.');
       return;
     }
 
@@ -71,19 +118,13 @@ export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) 
     recognition.lang = 'en-US';
 
     recognition.onresult = (e: any) => {
-      let interim = '';
       for (let i = e.resultIndex; i < e.results.length; i++) {
-        const text = e.results[i][0].transcript;
         if (e.results[i].isFinal) {
-          fullTranscriptRef.current += text + ' ';
-        } else {
-          interim += text;
+          fullTranscriptRef.current += e.results[i][0].transcript + ' ';
         }
       }
-      setLiveTranscript(fullTranscriptRef.current + interim);
     };
 
-    // onend fires after all results are in — safe place to read fullTranscriptRef
     recognition.onend = () => {
       if (stoppedByUserRef.current) {
         processTranscript(fullTranscriptRef.current);
@@ -91,21 +132,37 @@ export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) 
     };
 
     recognition.onerror = (e: any) => {
-      if (e.error === 'no-speech') return; // ignore — onend will handle it
+      if (e.error === 'no-speech') return;
       setError(`Mic error: ${e.error}`);
       setRecording(false);
     };
 
     recognition.start();
     recognitionRef.current = recognition;
-    setLiveTranscript('');
     setRecording(true);
+
+    // Attempt waveform visualization (non-blocking — if it fails, recording still works)
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const audioCtx = new AudioContext();
+      audioCtxRef.current = audioCtx;
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 64; // 32 frequency buckets
+      source.connect(analyser);
+      analyserRef.current = analyser;
+      drawWaveform();
+    } catch {
+      // Waveform unavailable — canvas stays dim, transcription unaffected
+    }
   };
 
   const stopRecording = () => {
     stoppedByUserRef.current = true;
     recognitionRef.current?.stop();
-    // Don't process here — wait for onend so all results are flushed
+    stopWaveform();
+    // processTranscript is called from recognition.onend once results are flushed
   };
 
   const handleSave = async () => {
@@ -142,9 +199,13 @@ export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) 
             </select>
           </div>
 
-          <div className={`min-h-[64px] bg-zinc-900 rounded-lg px-3 py-2 text-xs text-zinc-400 transition-opacity ${recording ? 'opacity-100' : 'opacity-40'}`}>
-            {liveTranscript || (recording ? 'Listening...' : 'Transcript will appear here')}
-          </div>
+          <canvas
+            ref={canvasRef}
+            width={320}
+            height={64}
+            className="w-full rounded-lg bg-zinc-900 transition-opacity duration-300"
+            style={{ opacity: recording ? 1 : 0.3 }}
+          />
 
           {error && <p className="text-xs text-red-400">{error}</p>}
 
