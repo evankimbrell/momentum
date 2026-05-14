@@ -60,7 +60,7 @@ router.post('/voice-memo', async (req: Request, res: Response, next) => {
 // POST /api/ai/voice-memo/apply — commit the extracted changes
 router.post('/voice-memo/apply', async (req: Request, res: Response, next) => {
   try {
-    const { extracted, personId, audioNoteId } = req.body;
+    const { extracted, personId, audioNoteId, transcript } = req.body;
     let person;
     if (personId) {
       // User explicitly selected a person — always update them regardless of Claude's action
@@ -89,16 +89,13 @@ router.post('/voice-memo/apply', async (req: Request, res: Response, next) => {
         data: { applied: true, personId: person?.id },
       });
     }
-    // Always log an interaction for the voice memo, regardless of whether
-    // Claude returned an interactionSummary (it often returns null for updates)
+    // Always log an interaction for the voice memo using the raw transcript
     if (person) {
-      const platform = extracted.person?.platform ?? person.platform ?? 'voice memo';
-      const summary = extracted.interactionSummary ?? extracted.updates?.dateNotes ?? 'Voice memo logged.';
       await prisma.interaction.create({
         data: {
           personId: person.id,
-          platform,
-          summary,
+          platform: 'voice memo',
+          summary: transcript ?? extracted.interactionSummary ?? 'Voice memo logged.',
           date: new Date(),
         },
       });

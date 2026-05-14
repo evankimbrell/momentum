@@ -65,6 +65,7 @@ export const applyVoiceMemo = (data: {
   extracted: VoiceMemoResult['extracted'];
   personId?: string;
   audioNoteId?: string;
+  transcript?: string;
 }) =>
   request<Person>('/ai/voice-memo/apply', {
     method: 'POST',

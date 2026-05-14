@@ -176,6 +176,7 @@ export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) 
       await applyVoiceMemo({
         extracted: result.extracted,
         personId: selectedPersonId || undefined,
+        transcript: result.transcript,
       });
       onSaved();
     } catch {
@@ -247,12 +248,17 @@ export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) 
           </div>
 
           <div className="bg-zinc-900 rounded-lg p-3 space-y-1">
-            <p className="text-[11px] text-zinc-500 mb-1">Extracted</p>
-            <p className="text-xs font-mono text-green-400">
-              {result.extracted.action === 'create' ? '+ New person' : '↻ Update'}:{' '}
-              {result.extracted.person?.name ?? result.extracted.personNameHint}
-            </p>
-            {result.extracted.person?.platform && (
+            <p className="text-[11px] text-zinc-500 mb-1">Ready to save</p>
+            {selectedPersonId ? (
+              <p className="text-xs font-mono text-green-400">
+                ✓ Update: {people.find(p => p.id === selectedPersonId)?.name ?? 'Selected person'}
+              </p>
+            ) : (
+              <p className="text-xs font-mono text-green-400">
+                + New person: {result.extracted.person?.name ?? result.extracted.personNameHint ?? 'Unknown'}
+              </p>
+            )}
+            {result.extracted.person?.platform && !selectedPersonId && (
               <p className="text-xs text-zinc-400">Platform: {result.extracted.person.platform}</p>
             )}
             {result.extracted.person?.age && (
@@ -260,9 +266,6 @@ export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) 
             )}
             {result.extracted.person?.dateNotes && (
               <p className="text-xs text-zinc-400">Notes: {result.extracted.person.dateNotes}</p>
-            )}
-            {result.extracted.interactionSummary && (
-              <p className="text-xs text-zinc-400">Interaction: {result.extracted.interactionSummary}</p>
             )}
           </div>
 
