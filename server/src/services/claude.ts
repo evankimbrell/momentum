@@ -66,7 +66,7 @@ If this describes a new person, return:
     "nationality": <string | null>,
     "heightCm": <number | null>,
     "attractiveness": <number | null>,
-    "platform": <string | null>,
+    "platform": <string — use "unknown" if not mentioned>,
     "drinks": <boolean | null>,
     "profession": <string | null>,
     "status": "ACTIVE" | "NEEDS_PING" | "GHOSTED" | "ARCHIVED",

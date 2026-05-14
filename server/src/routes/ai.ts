@@ -63,7 +63,15 @@ router.post('/voice-memo/apply', async (req: Request, res: Response, next) => {
     const { extracted, personId, audioNoteId } = req.body;
     let person;
     if (extracted.action === 'create') {
-      person = await prisma.person.create({ data: extracted.person });
+      const personData = {
+        ...extracted.person,
+        name: extracted.person?.name ?? extracted.personNameHint ?? 'Unknown',
+        platform: extracted.person?.platform ?? 'unknown',
+        status: extracted.person?.status ?? 'ACTIVE',
+        dealBreakers: extracted.person?.dealBreakers ?? [],
+        greenFlags: extracted.person?.greenFlags ?? [],
+      };
+      person = await prisma.person.create({ data: personData });
     } else if (extracted.action === 'update' && personId) {
       person = await prisma.person.update({
         where: { id: personId as string },
