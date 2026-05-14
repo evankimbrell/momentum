@@ -99,6 +99,27 @@ If this is an update to an existing person, return:
   return JSON.parse(raw.replace(/```json\n?|\n?```/g, '').trim());
 }
 
+export async function extractNameFromPhotos(imageUrls: string[]): Promise<string | null> {
+  const content: Anthropic.MessageParam['content'] = [];
+  for (const url of imageUrls) {
+    content.push({ type: 'image', source: { type: 'url', url } });
+  }
+  content.push({
+    type: 'text',
+    text: 'These are profile photos from a dating app. Look for the person\'s name anywhere visible — in the profile bio, name field, or any overlay text. Return ONLY the first name as plain text with no punctuation or explanation. If no name is visible, return the single word: null',
+  });
+
+  const response = await getClient().messages.create({
+    model: MODEL,
+    max_tokens: 64,
+    messages: [{ role: 'user', content }],
+  });
+
+  const raw = (response.content[0] as Anthropic.TextBlock).text.trim();
+  if (!raw || raw.toLowerCase() === 'null') return null;
+  return raw;
+}
+
 export async function suggestFollowup(personContext: {
   name: string;
   lastContactDate?: Date | null;

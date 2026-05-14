@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { X, ImagePlus } from 'lucide-react';
 import VoiceMemo from './VoiceMemo';
-import { uploadPersonPhotos } from '../lib/api';
+import { uploadPersonPhotos, extractNameFromPhotos } from '../lib/api';
 
 interface Props {
   onClose: () => void;
@@ -11,14 +11,25 @@ interface Props {
 export default function AddUpdateSheet({ onClose, onSaved }: Props) {
   const [photos, setPhotos] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [extractedName, setExtractedName] = useState<string | null>(null);
+  const [extractingName, setExtractingName] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (files.length === 0) return;
     const combined = [...photos, ...files].slice(0, 5);
     setPhotos(combined);
     setPreviews(combined.map((f) => URL.createObjectURL(f)));
+
+    // Extract name from photos in background
+    setExtractingName(true);
+    setExtractedName(null);
+    try {
+      const { name } = await extractNameFromPhotos(combined);
+      setExtractedName(name);
+    } catch { /* non-fatal */ }
+    setExtractingName(false);
   };
 
   const removePhoto = (i: number) => {
@@ -27,6 +38,7 @@ export default function AddUpdateSheet({ onClose, onSaved }: Props) {
     const newPreviews = previews.filter((_, idx) => idx !== i);
     setPhotos(newPhotos);
     setPreviews(newPreviews);
+    if (newPhotos.length === 0) setExtractedName(null);
   };
 
   const handleSaved = async (personId: string) => {
@@ -51,7 +63,15 @@ export default function AddUpdateSheet({ onClose, onSaved }: Props) {
 
         {/* Photo picker */}
         <div className="mb-5">
-          <p className="text-xs text-zinc-500 mb-2">Profile photos (up to 5)</p>
+          <div className="flex items-center gap-2 mb-2">
+            <p className="text-xs text-zinc-500">Profile photos (up to 5)</p>
+            {extractingName && (
+              <span className="text-[10px] text-zinc-600">reading name...</span>
+            )}
+            {!extractingName && extractedName && (
+              <span className="text-[10px] text-green-500">✓ {extractedName}</span>
+            )}
+          </div>
           <div className="flex gap-2 flex-wrap">
             {previews.map((src, i) => (
               <div key={i} className="relative w-16 h-16">
@@ -79,13 +99,14 @@ export default function AddUpdateSheet({ onClose, onSaved }: Props) {
             type="file"
             accept="image/*"
             multiple
-            capture="environment"
             className="hidden"
             onChange={handleFileChange}
           />
         </div>
 
         <VoiceMemo
+          hidePersonSelector
+          nameOverride={extractedName ?? undefined}
           onSaved={handleSaved}
           onClose={onClose}
         />

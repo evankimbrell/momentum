@@ -3,7 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { PrismaClient } from '@prisma/client';
-import { analyzeChat, parseVoiceMemo, suggestFollowup } from '../services/claude';
+import { analyzeChat, parseVoiceMemo, suggestFollowup, extractNameFromPhotos } from '../services/claude';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -106,6 +106,17 @@ router.post('/voice-memo/apply', async (req: Request, res: Response, next) => {
       });
     }
     res.json(person);
+  } catch (err) { next(err); }
+});
+
+// POST /api/ai/extract-name — read a person's name from uploaded profile photos
+router.post('/extract-name', upload.array('photos', 5), async (req: Request, res: Response, next) => {
+  try {
+    const files = req.files as Express.Multer.File[] | undefined;
+    if (!files || files.length === 0) return res.status(400).json({ error: 'No photos provided' });
+    const imageUrls = files.map(f => `${req.protocol}://${req.get('host')}/uploads/${f.filename}`);
+    const name = await extractNameFromPhotos(imageUrls);
+    res.json({ name });
   } catch (err) { next(err); }
 });
 

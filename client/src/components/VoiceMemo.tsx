@@ -7,6 +7,8 @@ interface Props {
   onSaved: (personId: string) => void;
   onClose: () => void;
   defaultPersonId?: string;
+  hidePersonSelector?: boolean;
+  nameOverride?: string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -36,7 +38,7 @@ function Waveform({ active }: { active: boolean }) {
   );
 }
 
-export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) {
+export default function VoiceMemo({ onSaved, onClose, defaultPersonId, hidePersonSelector, nameOverride }: Props) {
   const [phase, setPhase] = useState<'record' | 'processing' | 'confirm'>('record');
   const [recording, setRecording] = useState(false);
   const [result, setResult] = useState<VoiceMemoResult | null>(null);
@@ -128,8 +130,11 @@ export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) 
     if (!result) return;
     setSaving(true);
     try {
+      const extracted = nameOverride
+        ? { ...result.extracted, person: { ...(result.extracted.person ?? {}), name: nameOverride } }
+        : result.extracted;
       const person = await applyVoiceMemo({
-        extracted: result.extracted,
+        extracted,
         personId: selectedPersonId || undefined,
         transcript: result.transcript,
       });
@@ -145,19 +150,21 @@ export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) 
     <div className="space-y-4">
       {phase === 'record' && (
         <>
-          <div className="space-y-2">
-            <label className="text-xs text-zinc-500">Update existing person (or leave blank for new)</label>
-            <select
-              className="w-full bg-zinc-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
-              value={selectedPersonId}
-              onChange={(e) => setSelectedPersonId(e.target.value)}
-            >
-              <option value="">— New person —</option>
-              {people.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          </div>
+          {!hidePersonSelector && (
+            <div className="space-y-2">
+              <label className="text-xs text-zinc-500">Update existing person (or leave blank for new)</label>
+              <select
+                className="w-full bg-zinc-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
+                value={selectedPersonId}
+                onChange={(e) => setSelectedPersonId(e.target.value)}
+              >
+                <option value="">— New person —</option>
+                {people.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <Waveform active={recording} />
 

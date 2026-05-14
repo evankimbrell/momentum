@@ -79,6 +79,12 @@ export const applyVoiceMemo = (data: {
     body: JSON.stringify(data),
   });
 
+export const extractNameFromPhotos = (files: File[]) => {
+  const form = new FormData();
+  files.forEach((f) => form.append('photos', f));
+  return request<{ name: string | null }>('/ai/extract-name', { method: 'POST', body: form });
+};
+
 export const suggestFollowup = (personId: string) =>
   request<{ message: string }>('/ai/suggest-followup', {
     method: 'POST',
