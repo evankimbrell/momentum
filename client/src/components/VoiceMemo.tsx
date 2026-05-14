@@ -9,12 +9,8 @@ interface Props {
   defaultPersonId?: string;
 }
 
-declare global {
-  interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
-  }
-}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyRecognition = any;
 
 export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) {
   const [phase, setPhase] = useState<'record' | 'processing' | 'confirm'>('record');
@@ -26,17 +22,17 @@ export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) 
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<AnyRecognition>(null);
   const fullTranscriptRef = useRef('');
 
   useEffect(() => {
     getPeople(true).then(setPeople).catch(() => {});
   }, []);
 
-  const SpeechRecognitionAPI =
-    typeof window !== 'undefined'
-      ? window.SpeechRecognition || window.webkitSpeechRecognition
-      : null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const SpeechRecognitionAPI = typeof window !== 'undefined'
+    ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    : null;
 
   const startRecording = () => {
     if (!SpeechRecognitionAPI) {
@@ -50,13 +46,11 @@ export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) 
     recognition.lang = 'en-US';
     fullTranscriptRef.current = '';
 
-    recognition.onresult = (e) => {
+    recognition.onresult = (e: any) => {
       let interim = '';
-      let final = '';
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const text = e.results[i][0].transcript;
         if (e.results[i].isFinal) {
-          final += text + ' ';
           fullTranscriptRef.current += text + ' ';
         } else {
           interim += text;
@@ -65,7 +59,7 @@ export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) 
       setLiveTranscript(fullTranscriptRef.current + interim);
     };
 
-    recognition.onerror = (e: SpeechRecognitionErrorEvent) => {
+    recognition.onerror = (e: any) => {
       if (e.error !== 'no-speech') setError(`Mic error: ${e.error}`);
     };
 
@@ -130,7 +124,6 @@ export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) 
             </select>
           </div>
 
-          {/* Live transcript display */}
           <div className={`min-h-[64px] bg-zinc-900 rounded-lg px-3 py-2 text-xs text-zinc-400 transition-opacity ${recording ? 'opacity-100' : 'opacity-40'}`}>
             {liveTranscript || (recording ? 'Listening...' : 'Transcript will appear here')}
           </div>
