@@ -24,6 +24,8 @@ export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) 
 
   const recognitionRef = useRef<AnyRecognition>(null);
   const fullTranscriptRef = useRef('');
+  // Track whether the user explicitly stopped (vs recognition ending on its own)
+  const stoppedByUserRef = useRef(false);
 
   useEffect(() => {
     getPeople(true).then(setPeople).catch(() => {});
@@ -34,17 +36,39 @@ export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) 
     ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     : null;
 
-  const startRecording = () => {
-    if (!SpeechRecognitionAPI) {
-      setError('Speech recognition not supported in this browser. Try Chrome or Safari.');
+  const processTranscript = async (transcript: string) => {
+    if (!transcript.trim()) {
+      setError('No speech detected. Try again.');
+      setRecording(false);
       return;
     }
+    setRecording(false);
+    setPhase('processing');
+    setError('');
+    try {
+      const data = await sendVoiceMemo(transcript.trim(), selectedPersonId || undefined);
+      setResult(data);
+      setPhase('confirm');
+    } catch {
+      setError('Failed to process. Check your API key.');
+      setPhase('record');
+    }
+  };
+
+  const startRecording = () => {
+    if (!SpeechRecognitionAPI) {
+      setError('Speech recognition not supported in this browser. Try Safari on iOS or Chrome.');
+      return;
+    }
+
+    setError('');
+    fullTranscriptRef.current = '';
+    stoppedByUserRef.current = false;
 
     const recognition = new SpeechRecognitionAPI();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
-    fullTranscriptRef.current = '';
 
     recognition.onresult = (e: any) => {
       let interim = '';
@@ -59,8 +83,17 @@ export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) 
       setLiveTranscript(fullTranscriptRef.current + interim);
     };
 
+    // onend fires after all results are in — safe place to read fullTranscriptRef
+    recognition.onend = () => {
+      if (stoppedByUserRef.current) {
+        processTranscript(fullTranscriptRef.current);
+      }
+    };
+
     recognition.onerror = (e: any) => {
-      if (e.error !== 'no-speech') setError(`Mic error: ${e.error}`);
+      if (e.error === 'no-speech') return; // ignore — onend will handle it
+      setError(`Mic error: ${e.error}`);
+      setRecording(false);
     };
 
     recognition.start();
@@ -69,25 +102,10 @@ export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) 
     setRecording(true);
   };
 
-  const stopRecording = async () => {
+  const stopRecording = () => {
+    stoppedByUserRef.current = true;
     recognitionRef.current?.stop();
-    setRecording(false);
-
-    const transcript = fullTranscriptRef.current.trim();
-    if (!transcript) {
-      setError('No speech detected. Try again.');
-      return;
-    }
-
-    setPhase('processing');
-    try {
-      const data = await sendVoiceMemo(transcript, selectedPersonId || undefined);
-      setResult(data);
-      setPhase('confirm');
-    } catch {
-      setError('Failed to process. Check your API key.');
-      setPhase('record');
-    }
+    // Don't process here — wait for onend so all results are flushed
   };
 
   const handleSave = async () => {
@@ -191,7 +209,7 @@ export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) 
               onClick={handleSave}
               disabled={saving}
             >
-              <Check size={16} /> Save
+              <Check size={16} /> {saving ? 'Saving...' : 'Save'}
             </button>
             <button
               className="flex items-center justify-center px-4 bg-zinc-900 border border-white/10 text-zinc-400 rounded-lg"
