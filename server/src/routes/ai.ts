@@ -62,7 +62,20 @@ router.post('/voice-memo/apply', async (req: Request, res: Response, next) => {
   try {
     const { extracted, personId, audioNoteId } = req.body;
     let person;
-    if (extracted.action === 'create') {
+    if (personId) {
+      // User explicitly selected a person — always update them regardless of Claude's action
+      const updates = extracted.action === 'update'
+        ? extracted.updates
+        : extracted.person ?? {};
+      // Strip undefined / null values so we don't accidentally clear fields
+      const cleanUpdates = Object.fromEntries(
+        Object.entries(updates).filter(([, v]) => v !== null && v !== undefined && v !== '')
+      );
+      person = await prisma.person.update({
+        where: { id: personId as string },
+        data: cleanUpdates,
+      });
+    } else if (extracted.action === 'create') {
       const personData = {
         ...extracted.person,
         name: extracted.person?.name ?? extracted.personNameHint ?? 'Unknown',
@@ -72,11 +85,6 @@ router.post('/voice-memo/apply', async (req: Request, res: Response, next) => {
         greenFlags: extracted.person?.greenFlags ?? [],
       };
       person = await prisma.person.create({ data: personData });
-    } else if (extracted.action === 'update' && personId) {
-      person = await prisma.person.update({
-        where: { id: personId as string },
-        data: extracted.updates,
-      });
     }
     if (audioNoteId) {
       await prisma.audioNote.update({

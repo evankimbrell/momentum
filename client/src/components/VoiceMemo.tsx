@@ -34,7 +34,10 @@ export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) 
 
   useEffect(() => {
     getPeople(true).then(setPeople).catch(() => {});
-    return () => { stopWaveform(); };
+    return () => {
+      stopWaveform();
+      recognitionRef.current?.abort();
+    };
   }, []);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -112,6 +115,23 @@ export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) 
     fullTranscriptRef.current = '';
     stoppedByUserRef.current = false;
 
+    // Acquire mic FIRST so iOS shares the audio session with SpeechRecognition
+    // (if getUserMedia runs after recognition.start(), iOS may deny it)
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const audioCtx = new AudioContext();
+      audioCtxRef.current = audioCtx;
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 64;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+      drawWaveform();
+    } catch {
+      // Waveform unavailable — canvas stays dim, transcription still works
+    }
+
     const recognition = new SpeechRecognitionAPI();
     recognition.continuous = true;
     recognition.interimResults = true;
@@ -140,22 +160,6 @@ export default function VoiceMemo({ onSaved, onClose, defaultPersonId }: Props) 
     recognition.start();
     recognitionRef.current = recognition;
     setRecording(true);
-
-    // Attempt waveform visualization (non-blocking — if it fails, recording still works)
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      const audioCtx = new AudioContext();
-      audioCtxRef.current = audioCtx;
-      const source = audioCtx.createMediaStreamSource(stream);
-      const analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 64; // 32 frequency buckets
-      source.connect(analyser);
-      analyserRef.current = analyser;
-      drawWaveform();
-    } catch {
-      // Waveform unavailable — canvas stays dim, transcription unaffected
-    }
   };
 
   const stopRecording = () => {
