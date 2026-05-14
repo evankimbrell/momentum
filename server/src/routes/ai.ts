@@ -64,12 +64,9 @@ router.post('/voice-memo/apply', async (req: Request, res: Response, next) => {
     let person;
     if (personId) {
       // User explicitly selected a person — always update them regardless of Claude's action
-      const updates = extracted.action === 'update'
-        ? extracted.updates
-        : extracted.person ?? {};
-      // Strip undefined / null values so we don't accidentally clear fields
+      const updates = (extracted.action === 'update' ? extracted.updates : extracted.person) ?? {};
       const cleanUpdates = Object.fromEntries(
-        Object.entries(updates).filter(([, v]) => v !== null && v !== undefined && v !== '')
+        Object.entries(updates as object).filter(([, v]) => v !== null && v !== undefined && v !== '')
       );
       person = await prisma.person.update({
         where: { id: personId as string },
@@ -92,14 +89,23 @@ router.post('/voice-memo/apply', async (req: Request, res: Response, next) => {
         data: { applied: true, personId: person?.id },
       });
     }
-    if (extracted.interactionSummary && person) {
+    // Always log an interaction for the voice memo, regardless of whether
+    // Claude returned an interactionSummary (it often returns null for updates)
+    if (person) {
+      const platform = extracted.person?.platform ?? person.platform ?? 'voice memo';
+      const summary = extracted.interactionSummary ?? extracted.updates?.dateNotes ?? 'Voice memo logged.';
       await prisma.interaction.create({
         data: {
           personId: person.id,
-          platform: extracted.person?.platform ?? 'voice memo',
-          summary: extracted.interactionSummary,
+          platform,
+          summary,
           date: new Date(),
         },
+      });
+      // Keep lastContactDate fresh
+      await prisma.person.update({
+        where: { id: person.id },
+        data: { lastContactDate: new Date() },
       });
     }
     res.json(person);
