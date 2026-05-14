@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mic, Image, MessageSquare, Plus } from 'lucide-react';
-import { getPerson, suggestFollowup, createInteraction, updatePerson } from '../lib/api';
+import { ArrowLeft, Mic, Image, MessageSquare, Plus, Trash2 } from 'lucide-react';
+import { getPerson, suggestFollowup, createInteraction, updatePerson, deletePerson } from '../lib/api';
 import type { Person } from '../lib/types';
 import { BADGE_CONFIG, flagEmoji, platformBadgeClass, STATUS_LABELS, formatDaysAgo } from '../lib/utils';
 import FollowUpBlock from '../components/FollowUpBlock';
@@ -57,6 +57,13 @@ export default function PersonProfile() {
     load();
   };
 
+  const handleDelete = async () => {
+    if (!person) return;
+    if (!window.confirm(`Delete ${person.name}? This cannot be undone.`)) return;
+    await deletePerson(person.id);
+    navigate(-1);
+  };
+
   if (!person) {
     return (
       <div className="flex items-center justify-center h-full text-zinc-600 text-sm">
@@ -90,6 +97,9 @@ export default function PersonProfile() {
             </span>
           </div>
         </div>
+        <button onClick={handleDelete} className="text-zinc-600 p-1 -mr-1">
+          <Trash2 size={18} />
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto pb-32">
